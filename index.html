@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Фотогалерея | Евгений</title>
+
+    <!-- 1. CSS от PhotoSwipe через CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
+
+    <!-- Подключение шрифтов с Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ОБЩИЕ СТИЛИ И СБРОС --- */
+        :root {
+            --background-color: #f0f0f0;
+            --text-color: #f0f0f0;
+            --gap: 15px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+		/* --- СТИЛИ ДЛЯ ПОЛОСЫ ПРОКРУТКИ --- */
+		html {
+			scrollbar-width: thin;
+			scrollbar-color: #4a4a4a #1c1c1c;
+            scroll-behavior: smooth;
+		}
+		::-webkit-scrollbar {
+			width: 10px;
+		}
+		::-webkit-scrollbar-track {
+			background-color: #1c1c1c;
+		}
+		::-webkit-scrollbar-thumb {
+			background-color: #4a4a4a;
+			border-radius: 5px;
+			border: 2px solid #1c1c1c;
+		}
+		::-webkit-scrollbar-thumb:hover {
+			background-color: #666666;
+		}		
+
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        /* --- СТАРТОВЫЙ ЭКРАН (HERO) --- */
+        .hero {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-image: url('Photos/photo71.jpg');
+            background-size: cover;
+            background-position: center;
+            /* 
+               ИСПРАВЛЕНИЕ 1: Свойство 'background-attachment: fixed;' удалено.
+               Это главная причина проблем с производительностью в Firefox и Edge.
+            */
+            /* background-attachment: fixed; */
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-family: 'Playfair Display', serif;
+            margin: 0;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            color: white;
+            text-decoration: none;
+            font-size: 2rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-15px); }
+            60% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        /* --- СЕТКА ГАЛЕРЕИ (MASONRY) --- */
+        .gallery-container {
+            padding: 20px;
+        }
+
+        .masonry-grid {
+            column-count: 4;
+            column-gap: var(--gap);
+        }
+        
+        .gallery-item {
+            display: inline-block;
+            width: 100%;
+            margin-bottom: var(--gap);
+            break-inside: avoid;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            cursor: zoom-in;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item img:hover {
+            transform: scale(1.02);
+        }
+
+        /* --- АДАПТИВНОСТЬ СЕТКИ --- */
+        @media (max-width: 1200px) { .masonry-grid { column-count: 3; } }
+        @media (max-width: 800px) { .masonry-grid { column-count: 2; } }
+        @media (max-width: 500px) { .masonry-grid { column-count: 1; } }
+
+        /* --- Кастомные стили для PhotoSwipe --- */
+        .pswp__bg {
+            background-color: #ffffff !important;
+        }
+
+        .pswp {
+            --pswp-icon-color: #333333;
+            --pswp-icon-color-secondary: #555555;
+        }
+		
+		/*
+           ИСПРАВЛЕНИЕ 2: Этот блок стилей удален.
+           Он мог конфликтовать с внутренними расчетами PhotoSwipe,
+           вызывая разное поведение в браузерах.
+        */
+
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Евгений</h1>
+        </div>
+        <a href="#gallery-container" class="scroll-down">↓</a>
+    </section>
+
+    <main id="gallery-container" class="gallery-container">
+        <div id="gallery" class="masonry-grid">
+            <!-- Фотографии будут добавлены сюда с помощью JavaScript -->
+        </div>
+    </main>
+
+    <!-- JS-модуль PhotoSwipe через CDN (без изменений) -->
+    <script type="module">
+        import PhotoSwipe from 'https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.esm.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const photoCount = 80;
+            const photoFolder = 'Photos';
+            const photoExtension = '.jpg';
+            const galleryElement = document.getElementById('gallery');
+
+            const setImageDimensions = (imgElement) => {
+                const link = imgElement.parentElement;
+                link.dataset.pswpWidth = imgElement.naturalWidth;
+                link.dataset.pswpHeight = imgElement.naturalHeight;
+            };
+
+            for (let i = 1; i <= photoCount; i++) {
+                const imageUrl = `${photoFolder}/photo${i}${photoExtension}`;
+                
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.className = 'gallery-item';
+                
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = `Фотография ${i}`;
+                img.loading = 'lazy';
+
+                if (img.complete) {
+                    setImageDimensions(img);
+                } else {
+                    img.addEventListener('load', () => setImageDimensions(img));
+                }
+
+                link.appendChild(img);
+                galleryElement.appendChild(link);
+            }
+
+            galleryElement.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const clickedItem = e.target.closest('a.gallery-item');
+                if (!clickedItem) {
+                    return;
+                }
+
+                if (!clickedItem.dataset.pswpWidth || !clickedItem.dataset.pswpHeight) {
+                    console.log('Image dimensions not ready yet, please wait for the image to load.');
+                    return;
+                }
+                
+                const allItems = Array.from(galleryElement.querySelectorAll('a.gallery-item'));
+                const index = allItems.indexOf(clickedItem);
+
+                const options = {
+                    dataSource: allItems,
+                    index: index,
+                    getThumbBoundsFn: (index) => {
+                        const thumbnail = allItems[index].querySelector('img');
+                        if (!thumbnail) return null;
+                        
+                        const pageYScroll = window.pageYOffset || document.documentElement.scrollTop;
+                        const rect = thumbnail.getBoundingClientRect();
+                        return {x: rect.left, y: rect.top + pageYScroll, w: rect.width};
+                    },
+                    showHideAnimationType: 'zoom',
+                };
+
+                const lightbox = new PhotoSwipe(options);
+                lightbox.init();
+            });
+        });
+    </script>
+
+</body>
+</html>
