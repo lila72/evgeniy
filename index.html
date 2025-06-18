@@ -14,7 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
     <style>
-        /* Стили остаются почти такими же, как в самом первом варианте */
         :root {
             --background-color: #f0f0f0;
             --text-color: #f0f0f0;
@@ -34,17 +33,28 @@
         .scroll-down { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2; color: white; text-decoration: none; font-size: 2rem; animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); } 40% { transform: translateX(-50%) translateY(-15px); } 60% { transform: translateX(-50%) translateY(-10px); } }
         
-        /* --- СТИЛИ ДЛЯ СЕТКИ MASONRY --- */
+        /* --- НОВЫЕ ОПТИМИЗИРОВАННЫЕ СТИЛИ ДЛЯ СЕТКИ --- */
         .gallery-container {
             padding: 20px;
         }
-        /* Задаем ширину колонок через CSS-переменную */
         .gallery-grid {
-            --grid-column-width: 24%; /* 4 колонки с отступами */
+            --grid-column-width: 24%;
+            /* 1. Скрываем сетку по умолчанию, чтобы избежать "прыжков" */
+            opacity: 0;
+            /* 2. Добавляем плавный переход для красивого появления */
+            transition: opacity 0.8s ease-in-out;
         }
+        /* 3. Класс, который добавит JS, когда сетка будет готова к показу */
+        .gallery-grid.loaded {
+            opacity: 1;
+        }
+
         .gallery-item {
             width: var(--grid-column-width);
             margin-bottom: var(--gap);
+            /* 4. Добавляем фон-плейсхолдер, который виден пока картинка грузится */
+            background-color: #e0e0e0;
+            border-radius: 8px;
         }
         .gallery-item img {
             width: 100%;
@@ -52,18 +62,25 @@
             display: block;
             border-radius: 8px;
             cursor: zoom-in;
-            transition: transform 0.3s ease;
+            /* 5. Плавный переход для масштабирования и появления самой картинки */
+            transition: transform 0.3s ease, opacity 0.4s ease;
+            /* 6. Каждая картинка тоже изначально "прозрачна" */
+            opacity: 0;
+        }
+        /* 7. Класс для показа загруженной картинки */
+        .gallery-item img.is-loaded {
+            opacity: 1;
         }
         .gallery-item img:hover {
             transform: scale(1.02);
         }
 
-        /* Адаптивность */
-        @media (max-width: 1200px) { .gallery-grid { --grid-column-width: 32%; } } /* 3 колонки */
-        @media (max-width: 800px) { .gallery-grid { --grid-column-width: 48%; } } /* 2 колонки */
-        @media (max-width: 500px) { .gallery-grid { --grid-column-width: 100%; } } /* 1 колонка */
+        /* Адаптивность (без изменений) */
+        @media (max-width: 1200px) { .gallery-grid { --grid-column-width: 32%; } }
+        @media (max-width: 800px) { .gallery-grid { --grid-column-width: 48%; } }
+        @media (max-width: 500px) { .gallery-grid { --grid-column-width: 100%; } }
 
-        /* Стили PhotoSwipe */
+        /* Стили PhotoSwipe (без изменений) */
         .pswp__bg { background-color: #ffffff !important; }
         .pswp { --pswp-icon-color: #333333; --pswp-icon-color-secondary: #555555; }
     </style>
@@ -76,21 +93,18 @@
     </section>
 
     <main id="gallery-container" class="gallery-container">
-        <!-- Возвращаемся к простой HTML-структуре -->
         <div id="gallery" class="gallery-grid">
-            <!-- Фотографии будут добавлены сюда -->
+            <!-- Фотографии будут добавлены сюда динамически -->
         </div>
     </main>
 
-    <!-- 1. Подключаем PhotoSwipe -->
+    <!-- Подключаем скрипты -->
     <script type="module" src="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.esm.js"></script>
-    <!-- 2. Подключаем Masonry.js -->
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
-    <!-- 3. Подключаем imagesLoaded (рекомендуется для Masonry) -->
     <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
 
     <script type="module">
-        // Импортируем PhotoSwipe, так как он загружен как модуль
+        // Импортируем PhotoSwipe
         import PhotoSwipe from 'https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.esm.js';
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -99,7 +113,7 @@
             const photoExtension = '.jpg';
             const galleryElement = document.getElementById('gallery');
 
-            // --- НОВАЯ ЛОГИКА С MASONRY.JS ---
+            // --- ОБНОВЛЕННАЯ ЛОГИКА ЗАГРУЗКИ ---
 
             // 1. Создаем и добавляем все элементы в DOM
             for (let i = 1; i <= photoCount; i++) {
@@ -112,33 +126,49 @@
                 const img = document.createElement('img');
                 img.src = imageUrl;
                 img.alt = `Фотография ${i}`;
-                img.loading = 'lazy';
+                img.loading = 'lazy'; // Отложенная загрузка остается полезной
 
-                // Устанавливаем размеры для PhotoSwipe
+                // Добавляем обработчик загрузки для каждой картинки
                 img.onload = () => {
+                    // Устанавливаем размеры для PhotoSwipe
                     link.dataset.pswpWidth = img.naturalWidth;
                     link.dataset.pswpHeight = img.naturalHeight;
+                    // Добавляем класс для плавного появления самого изображения
+                    img.classList.add('is-loaded');
                 };
+                // На случай, если изображение уже в кэше браузера
                 if (img.complete) {
                     link.dataset.pswpWidth = img.naturalWidth;
                     link.dataset.pswpHeight = img.naturalHeight;
+                    img.classList.add('is-loaded');
                 }
 
                 link.appendChild(img);
                 galleryElement.appendChild(link);
             }
 
-            // 2. Инициализируем Masonry после того, как все изображения загрузятся
-            imagesLoaded(galleryElement, function() {
-                new Masonry(galleryElement, {
-                    itemSelector: '.gallery-item',
-                    columnWidth: '.gallery-item', // Указываем, что ширина колонки равна ширине элемента
-                    gutter: 15, // Отступ между элементами
-                    percentPosition: true
-                });
+            // 2. ИНИЦИАЛИЗИРУЕМ MASONRY СРАЗУ!
+            // Это создаст "скелет" сетки из плейсхолдеров до полной загрузки картинок.
+            const msnry = new Masonry(galleryElement, {
+                itemSelector: '.gallery-item',
+                columnWidth: '.gallery-item',
+                gutter: 15,
+                percentPosition: true
             });
 
-            // --- ЛОГИКА PHOTOSWIPE (без изменений) ---
+            // 3. ИСПОЛЬЗУЕМ IMAGESLOADED, ЧТОБЫ ПОКАЗАТЬ ГОТОВУЮ СЕТКУ
+            imagesLoaded(galleryElement)
+              .on('progress', function() {
+                // Пересчитываем макет по мере загрузки каждой картинки для плавности
+                msnry.layout();
+              })
+              .on('always', function() {
+                // Когда все картинки загружены, плавно показываем всю сетку
+                galleryElement.classList.add('loaded');
+              });
+
+
+            // --- ЛОГИКА PHOTOSWIPE (остается без изменений) ---
             galleryElement.addEventListener('click', function(e) {
                 e.preventDefault();
                 const clickedItem = e.target.closest('a.gallery-item');
